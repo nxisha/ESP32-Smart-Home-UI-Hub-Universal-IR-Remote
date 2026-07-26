@@ -32,7 +32,7 @@ Charging: TP4056 Lithium Battery Charger Module (1A)
 
 Switch: Physical SPST Toggle Switch
 
-🔌 Wiring Schematic (Power Subsystem)
+Wiring Schematic (Power Subsystem)
 
 Due to the high current spikes required by IR transmission and the TFT backlight, power is handled via a parallel battery array bypassing standard buck converters for maximum runtime:
 
