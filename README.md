@@ -1,63 +1,126 @@
-# ESP32-Smart-Home-UI-Hub-Universal-IR-Remote
-Overview
+ESP32 Smart Home UI Hub & Universal IR/BLE Remote
 
-A centralized smart home control terminal built around an ESP32 microcontroller and a 2.8-inch TFT touch display. This hub unifies control over disparate home appliances by bridging Infrared (IR), Bluetooth Low Energy (BLE), and Wi-Fi protocols into a single, intuitive touch interface.
 
-FEATURES 
-Custom GUI: Multi-screen touch interface programmed over a high-speed SPI bus using TFT_eSPI.
+A physical demonstration of the Smart Hub navigating Fire TV via BLE and operating Voltas/Hitachi HVAC units via synthesized IR pulses.
 
-Complex HVAC Control: Synthesizes and transmits raw state arrays (Temp, Fan, Swing, Power) for Voltas/Hitachi Air Conditioners using IRac.
+Architecture Overview
 
-Universal TV Control: Replays raw 32-bit Samsung hex codes for standard television operation.
+A centralized smart home control terminal built around an ESP32-WROOM-32 and a 2.8-inch TFT SPI touch display. This hub unifies control over disparate home appliances by bridging Infrared (IR), Bluetooth Low Energy (BLE), and Wi-Fi protocols into a single concurrent interface.
 
-BLE HID Emulation: Acts as a wireless Bluetooth keyboard to navigate streaming devices (e.g., Amazon Fire TV).
+It actively operates a dual-role BLE architecture—acting as a Server (HID Keyboard) for streaming devices, and a Client for reverse-engineered smart lighting control, bypassing proprietary commercial hubs.
 
-IoT Wi-Fi Sync: Connects to local networks to fetch atomic time via NTP for a real-time digital screensaver clock.
+Hardware Stack
 
-Parallel Power Architecture: Runs on a custom-wired 700mAh parallel LiPo battery pack (3.7V) with diode-stepped voltage regulation for stable portable use.
+MCU: ESP32-WROOM-32 Development Board (Tensilica Xtensa Dual-Core 32-bit LX6)
 
- Hardware Requirements
+Display Interface: 2.8" TFT LCD Touch Screen (ILI9341 Driver, XPT2046 Touch Controller)
 
-Microcontroller: ESP32 Development Board
+IR Subsystem: 940nm Infrared LED with current-limiting 220Ω series resistor
 
-Display: 2.8" TFT LCD Touch Screen (SPI)
+Power Architecture:
 
-Transmitter: 940nm IR LED (with 220Ω resistor)
+2x 350mAh 3.7V LiPo Batteries (Parallel configuration for 700mAh capacity)
 
-Power: 2x 350mAh 3.7V LiPo Batteries (Wired in Parallel)
+TP4056 Lithium Battery Charger IC (1A regulated input)
 
-Regulation: 1N4007 Diode (for 0.7V drop to 3.0V safe operating logic)
+1N4007 Diode (Voltage step-down regulation)
 
-Charging: TP4056 Lithium Battery Charger Module (1A)
+GPIO Pinout & Wiring
 
-Switch: Physical SPST Toggle Switch
+Peripheral / Component
 
-Wiring Schematic (Power Subsystem)
+ESP32 GPIO
 
-Due to the high current spikes required by IR transmission and the TFT backlight, power is handled via a parallel battery array bypassing standard buck converters for maximum runtime:
+Notes / Alternate Function
 
-Batteries: Wired in parallel (+ to +, - to -) yielding 3.7V @ 700mAh.
+TFT_MOSI
 
-Charging: TP4056 connected directly to the parallel battery leads.
+GPIO 23
 
-Regulation: Battery Positive runs through the physical switch, into the Anode of a 1N4007 diode.
+VSPI MOSI
 
-ESP32 & TFT: The Cathode (striped end) of the diode connects to the 3V3 pin of the ESP32 and the VCC/VIN of the TFT, dropping the 4.2V max charge to a safe ~3.5V.
+TFT_MISO
 
-Software Dependencies
+GPIO 19
 
-Install the following libraries via the Arduino Library Manager:
+VSPI MISO
 
-TFT_eSPI (Configure User_Setup.h for your specific display driver)
+TFT_SCLK
 
-IRremoteESP8266 (For AC state synthesis and raw IR transmission)
+GPIO 18
 
-BleKeyboard (For Fire TV navigation)
+VSPI CLK
 
-Future Improvements
+TFT_CS
 
-Transitioning from physical switch to ESP32 Deep Sleep architecture using touch-interrupt wakeups.
+GPIO 15
 
-Adding a dedicated Buck/Boost converter for enhanced battery discharge curve utilization.
+Chip Select
 
-Expanding the BLE module to support multi-device pairing.
+TFT_DC
+
+GPIO 2
+
+Data/Command
+
+TFT_RST
+
+GPIO 4
+
+Hardware Reset
+
+TOUCH_CS
+
+GPIO 21
+
+Touch Controller CS
+
+IR_TX
+
+GPIO 12
+
+PWM Carrier Generation (38kHz)
+
+Power Subsystem & Diode Regulation
+
+Due to the high transient current spikes required by active IR transmission and the TFT backlight, power is handled via a direct parallel battery array, intentionally bypassing switching buck converters to maximize discharge utilization:
+
+Cell Configuration: Wired in parallel yielding 3.7V nominal @ 700mAh.
+
+Voltage Stepping: Battery positive is routed through a physical SPST switch and into the Anode of a 1N4007 diode.
+
+Logic Leveling: The Cathode drops the 4.2V peak charge by ~0.7V (Forward Voltage Drop), delivering a safe ~3.5V to the ESP32 3V3 pin and TFT VIN, operating safely within absolute maximum ratings without converter switching noise.
+
+Proof of Hardware
+
+View KiCad Schematic / Wiring Diagram
+
+View Logic Analyzer Trace (38kHz IR Carrier)
+
+Build & Flash Instructions
+
+1. IDE Configuration
+
+Environment: Arduino IDE 2.x or PlatformIO
+
+Board: ESP32 Dev Module
+
+Partition Scheme: Huge APP (3MB No OTA/1MB SPIFFS) (Required due to BLE + TFT library overhead).
+
+2. Dependencies
+
+TFT_eSPI by Bodmer (Must configure User_Setup.h for ILI9341 and assigned VSPI pins).
+
+IRremoteESP8266 by crankyoldgit.
+
+BleKeyboard by T-vK.
+
+3. Syska BLE Configuration
+
+To interface directly with the Syska Smart LED without the manufacturer app, configure the target MAC address in ESP32_Smart_Remote.ino:
+
+// Update to target Syska Bulb MAC Address
+BLEAddress bulbAddress("11:22:33:44:55:66"); 
+
+
+4. Compilation
